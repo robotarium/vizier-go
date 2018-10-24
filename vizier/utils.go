@@ -3,6 +3,12 @@ package vizier
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+)
+
+const (
+	letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	idLength    = 20
 )
 
 type Link struct {
@@ -13,6 +19,31 @@ type Request struct {
 	_type    string
 	link     string
 	required bool
+}
+type VizierRequest struct {
+	Id     string `json:"id"`
+	Link   string `json:"link"`
+	Method string `json:"method"`
+	Body   string `json:"body"`
+}
+
+type VizierResponse struct {
+	Type   string
+	Body   string
+	Status int
+}
+
+func NewGetRequest(link string, method string) VizierRequest {
+	return VizierRequest{MessageID(idLength), link, method, ""}
+}
+
+// For generating message ids
+func MessageID(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
 
 func ParseDescriptor(descriptor map[string]interface{}) (map[string]Link, map[string]Request, error) {

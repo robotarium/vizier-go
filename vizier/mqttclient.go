@@ -34,8 +34,10 @@ type mqttClient struct {
 }
 
 type MQTTClient interface {
+	Publish(string, []byte) error
 	Subscribe(string) chan []byte
 	SubscribeWithCallback(string, Callback)
+	Unsubscribe(string)
 	Start() error
 	Stop()
 }
@@ -88,6 +90,15 @@ func NewMQTTClient(host string, port int) MQTTClient {
 	return mi
 }
 
+func (this *mqttClient) Publish(topic string, message []byte) (err error) {
+	token := this.client.Publish(topic, 0, false, message)
+	if token.Error() != nil {
+		err = token.Error()
+	}
+
+	return
+}
+
 func (mi *mqttClient) SubscribeWithCallback(topic string, callback Callback) {
 	messageHandler := func(client mqtt.Client, message mqtt.Message) {
 		callback(message.Payload())
@@ -109,6 +120,14 @@ func (mi *mqttClient) Subscribe(topic string) chan []byte {
 	mi.SubscribeWithCallback(topic, callback)
 
 	return c
+}
+
+func (this *mqttClient) Unsubscribe(topic string) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	this.client.Unsubscribe(topic)
+	delete(this.subscriptions, topic)
 }
 
 func (mi *mqttClient) Start() error {
